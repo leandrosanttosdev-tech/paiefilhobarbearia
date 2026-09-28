@@ -1029,3 +1029,16 @@ ul, ol { list-style: none; }
 .intro.is-leaving { animation: intro-up .8s cubic-bezier(.7, 0, .2, 1) forwards; }
 @keyframes intro-up { to { transform: translateY(-100%); } }
 @keyframes intro-grow { from { transform: scaleX(0); } }
+
+/* =========================================================
+   TELAS DE TOQUE: área mínima de 44px nos links pequenos
+   (o visual continua o mesmo; só a área clicável cresce)
+   ========================================================= */
+@media (pointer: coarse) {
+  .footer__col { gap: 0; }
+  .footer__col h3 { margin-bottom: 2px; }
+  .footer__col p + p { margin-top: 8px; }
+  .footer__col a, .footer__bottom a { display: inline-flex; align-items: center; min-height: 44px; }
+  .footer__bottom { align-items: center; row-gap: 0; }
+  .link { min-height: 44px; }
+}

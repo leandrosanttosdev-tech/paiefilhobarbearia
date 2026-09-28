@@ -33,7 +33,7 @@
     if (started || left) return;
     started = true;
     screen.innerHTML = `<div class="intro__stage">
-        <img class="intro__logo" src="assets/img/apple-touch-icon.png" alt="" width="120" height="120" />
+        <img class="intro__logo" src="assets/img/logo-192.webp" alt="" width="96" height="96" />
         <span class="intro__name">${name}</span>
         <span class="intro__sub">Barbearia</span>
       </div>
