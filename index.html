@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" data-intro="1"><!-- data-intro: animação de entrada escolhida (1 a 5) -->
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
@@ -25,6 +25,15 @@
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/style.css" />
   <script>document.documentElement.classList.add("js")</script>
+  <!-- Animação de entrada: aparece só na 1ª visita da sessão. Para ver outra: ?intro=1 até ?intro=5 -->
+  <script>
+    (function () {
+      var d = document.documentElement, q = location.search.match(/[?&]intro=([1-5])/), seen = false;
+      try { seen = sessionStorage.getItem("pf-intro") === "1"; } catch (e) {}
+      if (q) d.setAttribute("data-intro", q[1]);
+      if (q || (!seen && !matchMedia("(prefers-reduced-motion: reduce)").matches)) d.classList.add("has-intro");
+    })();
+  </script>
 
   <script type="application/ld+json">
   {
@@ -57,6 +66,8 @@
   </script>
 </head>
 <body>
+  <!-- Animação de entrada (montada por js/intro.js) -->
+  <div class="intro" data-intro-screen aria-hidden="true"></div>
   <a class="skip" href="#conteudo">Pular para o conteúdo</a>
 
   <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -630,6 +641,7 @@
     </a>
   </div>
 
+  <script src="js/intro.js" defer></script>
   <script src="js/agendamento.js" defer></script>
   <script src="js/main.js" defer></script>
 </body>

@@ -981,3 +981,123 @@ ul, ol { list-style: none; }
   .footer__col { gap: 8px; font-size: 14px; }
   .footer__bottom { margin-top: 32px; padding-top: 18px; }
 }
+
+/* =========================================================
+   ANIMAÇÃO DE ENTRADA (js/intro.js)
+   ========================================================= */
+.intro {
+  display: none; place-items: center;
+  position: fixed; inset: 0; z-index: 2000;
+  background: var(--ink); color: var(--text);
+  overflow: hidden; cursor: pointer; user-select: none;
+}
+.has-intro .intro { display: grid; animation: intro-failsafe 0s 6s forwards; } /* se algo falhar, some sozinha */
+.intro.is-leaving { display: grid; pointer-events: none; }
+@keyframes intro-failsafe { to { visibility: hidden; } }
+/* o texto do topo entra em sequência quando a animação sai */
+.hero__text > * { transition: opacity .9s var(--ease), transform .9s var(--ease); }
+.hero__text > :nth-child(2) { transition-delay: .1s; }
+.hero__text > :nth-child(3) { transition-delay: .2s; }
+.hero__text > :nth-child(4) { transition-delay: .3s; }
+.hero__text > :nth-child(5) { transition-delay: .4s; }
+.has-intro .hero__text > * { opacity: 0; transform: translateY(22px); animation: intro-failsafe-show 0s 6s forwards; }
+@keyframes intro-failsafe-show { to { opacity: 1; transform: none; } }
+
+.intro__stage { position: relative; z-index: 2; display: grid; justify-items: center; text-align: center; transition: opacity .3s; }
+.intro__sub { font: 600 12px/1 var(--sans); letter-spacing: .4em; padding-left: .4em; text-transform: uppercase; color: var(--copper); }
+.intro__skip {
+  position: absolute; z-index: 3; left: 0; right: 0; bottom: calc(24px + env(safe-area-inset-bottom));
+  text-align: center; font-size: 11px; letter-spacing: .24em; text-transform: uppercase; color: var(--text-faint);
+  animation: intro-fade-up .6s 1s both; transition: opacity .3s;
+}
+.intro.is-leaving .intro__stage, .intro.is-leaving .intro__skip { opacity: 0; }
+@keyframes intro-fade-up { from { opacity: 0; transform: translateY(16px); } }
+
+/* 1 — Logo que acende */
+.intro--1 .intro__logo { width: 96px; height: 96px; border-radius: 50%; animation: intro-logo 1.1s var(--ease) both; }
+@keyframes intro-logo {
+  0% { opacity: 0; transform: scale(.7); filter: blur(8px); }
+  55% { opacity: 1; transform: scale(1.02); filter: blur(0) drop-shadow(0 0 30px rgba(196, 129, 79, .95)); }
+  100% { opacity: 1; transform: none; filter: drop-shadow(0 0 14px rgba(196, 129, 79, .45)); }
+}
+.intro__name { display: flex; margin-top: 24px; font: 600 clamp(36px, 10vw, 60px)/1 var(--display); letter-spacing: .08em; }
+.intro__name > span { display: inline-block; animation: intro-fade-up .5s var(--ease) both; animation-delay: calc(.5s + var(--i) * 45ms); }
+.intro--1 .intro__sub { margin-top: 12px; animation: intro-fade-up .6s 1.15s var(--ease) both; }
+.intro--1::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px;
+  background: var(--copper); transform-origin: left; animation: intro-grow 2.1s linear both;
+}
+.intro--1.is-leaving { animation: intro-up .8s cubic-bezier(.7, 0, .2, 1) forwards; }
+@keyframes intro-up { to { transform: translateY(-100%); } }
+@keyframes intro-grow { from { transform: scaleX(0); } }
+
+/* 2 e 3 — tela que se divide ao sair */
+.intro--2, .intro--3 { background: transparent; }
+.intro__half { position: absolute; z-index: 1; background: var(--ink); transition: transform .85s cubic-bezier(.7, 0, .2, 1); }
+.intro__half--l { inset: 0 calc(50% - 1px) 0 0; }
+.intro__half--r { inset: 0 0 0 calc(50% - 1px); }
+.intro__half--t { inset: 0 0 calc(50% - 1px) 0; }
+.intro__half--b { inset: calc(50% - 1px) 0 0 0; }
+.is-leaving .intro__half--l { transform: translateX(-100%); }
+.is-leaving .intro__half--r { transform: translateX(100%); }
+.is-leaving .intro__half--t { transform: translateY(-100%); }
+.is-leaving .intro__half--b { transform: translateY(100%); }
+
+/* 2 — Poste de barbearia */
+.intro__pole {
+  position: relative; width: 46px; height: 190px; border-radius: 23px; overflow: hidden;
+  box-shadow: 0 0 0 3px #3a3129, 0 0 0 5px var(--copper-deep), 0 0 44px rgba(196, 129, 79, .35);
+  animation: intro-pole-in .7s var(--ease) both;
+}
+.intro__pole i {
+  position: absolute; left: 0; right: 0; top: -60px; bottom: 0;
+  background: repeating-linear-gradient(-45deg, var(--copper) 0 14px, var(--text) 14px 28px, var(--ink) 28px 42px);
+  animation: intro-pole .8s linear infinite;
+}
+.intro__pole::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit;
+  background: linear-gradient(90deg, rgba(0,0,0,.5), rgba(255,255,255,.2) 35%, rgba(0,0,0,.05) 60%, rgba(0,0,0,.6));
+}
+.intro--2 .intro__sub { margin-top: 28px; animation: intro-fade-up .6s .5s var(--ease) both; }
+@keyframes intro-pole-in { from { opacity: 0; transform: scaleY(.5); } }
+@keyframes intro-pole { to { transform: translateY(59.4px); } }
+
+/* 3 — Corte da navalha */
+.intro--3 .intro__stage { position: absolute; inset: 0; display: block; }
+.intro__blade {
+  position: absolute; left: 0; right: 0; top: calc(50% - 1px); height: 2px;
+  background: linear-gradient(90deg, transparent, var(--copper) 12%, #fff4e6 50%, var(--copper) 88%, transparent);
+  box-shadow: 0 0 18px rgba(196, 129, 79, .85);
+  transform: scaleX(0); transform-origin: left;
+  animation: intro-cut .75s .2s cubic-bezier(.7, 0, .2, 1) forwards;
+}
+@keyframes intro-cut { to { transform: scaleX(1); } }
+.intro__sub--up, .intro__sub--down { position: absolute; left: 0; right: 0; }
+.intro__sub--up {
+  bottom: calc(50% + 18px); font: 600 clamp(32px, 9vw, 56px)/1 var(--display); letter-spacing: .08em; padding: 0; color: var(--text);
+  animation: intro-from-line-up .6s .8s var(--ease) both;
+}
+.intro__sub--down { top: calc(50% + 18px); animation: intro-from-line-down .6s .9s var(--ease) both; }
+@keyframes intro-from-line-up { from { opacity: 0; transform: translateY(18px); } }
+@keyframes intro-from-line-down { from { opacity: 0; transform: translateY(-18px); } }
+
+/* 4 — 9 anos de legado */
+.intro__year { font: 600 clamp(96px, 28vw, 190px)/.9 var(--display); font-variant-numeric: tabular-nums; animation: intro-fade-up .5s var(--ease) both; }
+.intro__legacy {
+  margin-top: 12px; font: 600 clamp(20px, 5.4vw, 30px)/1.1 var(--display); letter-spacing: .14em; text-transform: uppercase; color: var(--copper);
+  animation: intro-fade-up .6s 1.25s var(--ease) both;
+}
+.intro--4 .intro__sub { margin-top: 14px; color: var(--text-dim); animation: intro-fade-up .6s 1.45s var(--ease) both; }
+.intro--4.is-leaving { animation: intro-out .7s var(--ease) forwards; }
+@keyframes intro-out { to { opacity: 0; transform: scale(1.06); visibility: hidden; } }
+
+/* 5 — Pai e Filho */
+.intro__words { display: flex; gap: .28em; font: 600 clamp(52px, 15vw, 110px)/1 var(--display); text-transform: uppercase; letter-spacing: .02em; }
+.intro__pai { animation: intro-from-left .7s .15s var(--ease) both; }
+.intro__filho { color: var(--copper); animation: intro-from-right .7s .6s var(--ease) both; }
+@keyframes intro-from-left { from { opacity: 0; transform: translateX(-44px); } }
+@keyframes intro-from-right { from { opacity: 0; transform: translateX(44px); } }
+.intro__line { justify-self: stretch; height: 2px; margin-top: 14px; background: var(--copper); transform: scaleX(0); animation: intro-cut .7s 1.05s cubic-bezier(.7, 0, .2, 1) forwards; }
+.intro--5 .intro__sub { margin-top: 16px; color: var(--text-dim); animation: intro-fade-up .6s 1.35s var(--ease) both; }
+.intro--5.is-leaving { animation: intro-clip .8s cubic-bezier(.7, 0, .2, 1) forwards; }
+@keyframes intro-clip { from { clip-path: inset(0 0 0 0); } to { clip-path: inset(0 0 100% 0); } }
