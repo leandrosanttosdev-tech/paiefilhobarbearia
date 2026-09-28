@@ -127,51 +127,253 @@
 
   /* ---------- Serviços: escolher o profissional antes de ir ao WhatsApp ---------- */
   const picker = $('[data-picker]');
-  if (picker && typeof picker.showModal === 'function') {
-    const WA = 'https://wa.me/5579999100181?text=';
+  const cfg = window.AGENDAMENTO;
+  if (picker && cfg && typeof picker.showModal === 'function') {
     const list = $('[data-picker-list]', picker);
     const title = $('[data-picker-service]', picker);
-    // a lista vem da seção Equipe: incluir/remover um card lá atualiza a escolha aqui
-    const team = $$('.barber').map(b => {
-      const role = $('.barber__role', b).textContent.trim();
-      return {
-        name: $('.barber__name', b).textContent.trim(),
-        role,
-        art: /a$/i.test(role) ? 'a' : 'o',
-        img: $('img', b).getAttribute('src'),
-      };
-    });
-    let lastTrigger = null;
+    // barbeiros, fotos, WhatsApp e horários vêm de js/agendamento.js
+    const team = cfg.barbeiros.map(b => ({
+      name: b.nome,
+      role: b.funcao || '',
+      img: b.foto,
+      phone: b.whatsapp || cfg.whatsappGeral,
+      hours: b.horarios || cfg.horarios,
+    }));
+    const stepWho = $('[data-picker-step="who"]', picker);
+    const stepWhen = $('[data-picker-step="when"]', picker);
+    const whoLabel = $('[data-picker-who]', picker);
+    const daysBox = $('[data-picker-days]', picker);
+    const timesBox = $('[data-picker-times]', picker);
+    const send = $('[data-picker-send]', picker);
+    const monthLabel = $('[data-cal-month]', picker);
+    const prevBtn = $('[data-cal-prev]', picker);
+    const nextBtn = $('[data-cal-next]', picker);
+    const monthNotes = $('[data-cal-notes]', picker);
+    const holidayNote = $('[data-picker-holiday]', picker);
+    const customBox = $('[data-picker-custom]', picker);
+    const timeInput = $('[data-picker-time-input]', picker);
+    const timeError = $('[data-picker-time-error]', picker);
 
-    const option = (href, avatar, name, sub) => {
+    const WEEK_FULL = ['domingo', 'segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', 'sexta-feira', 'sábado'];
+    const MONTH_FULL = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+    const pad = n => String(n).padStart(2, '0');
+
+    let lastTrigger = null;
+    let service = null;
+    let pro = null;   // null = sem preferência
+    let day = null;   // Date
+    let time = null;  // "HH:MM"
+
+    const option = (avatar, name, sub, onPick) => {
       const li = document.createElement('li');
-      li.innerHTML = `<a class="picker__opt" href="${href}" target="_blank" rel="noopener">${avatar}<span class="picker__who"><b></b><small></small></span><svg class="icon" aria-hidden="true"><use href="#i-arrow" /></svg></a>`;
+      li.innerHTML = `<button class="picker__opt" type="button">${avatar}<span class="picker__who"><b></b><small></small></span><svg class="icon" aria-hidden="true"><use href="#i-arrow" /></svg></button>`;
       $('b', li).textContent = name;
       $('small', li).textContent = sub;
-      $('a', li).addEventListener('click', () => picker.close());
+      $('button', li).addEventListener('click', onPick);
       return li;
     };
 
+    const chip = (cls, html, label, pressed, onPick) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = cls;
+      b.innerHTML = html;
+      if (label) b.setAttribute('aria-label', label);
+      b.setAttribute('aria-pressed', String(pressed));
+      b.addEventListener('click', onPick);
+      return b;
+    };
+
+    const iso = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    const TIPO = { nacional: 'Feriado nacional', regional: 'Feriado regional', facultativo: 'Ponto facultativo' };
+    const holidays = new Map((cfg.feriados || []).map(f => [f.data, f]));
+
+    // dia pode ser escolhido: não passou, não é dia fechado e ainda tem horário
+    const canPick = d => {
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      return d >= today && !cfg.diasFechados.includes(d.getDay()) && slotsFor(d).length > 0;
+    };
+
+    const firstFree = () => {
+      const now = new Date();
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      while (d.getFullYear() <= cfg.ano) {
+        if (d.getFullYear() === cfg.ano && canPick(d)) return new Date(d);
+        d.setDate(d.getDate() + 1);
+      }
+      return null;
+    };
+
+    // "Sem preferência" usa a lista geral de horários
+    const toMin = t => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+    // hoje: só horários com pelo menos 30 min de antecedência
+    const tooSoon = (d, t) => {
+      const now = new Date();
+      return d.toDateString() === now.toDateString() && toMin(t) <= now.getHours() * 60 + now.getMinutes() + 30;
+    };
+    const slotsFor = d => (pro ? pro.hours : cfg.horarios).filter(t => !tooSoon(d, t));
+
+    const updateSend = () => {
+      const ready = day && time;
+      send.setAttribute('aria-disabled', String(!ready));
+      if (!ready) { send.href = '#'; return; }
+      const hol = holidays.get(iso(day));
+      const date = `${pad(day.getDate())}/${pad(day.getMonth() + 1)}/${day.getFullYear()} (${WEEK_FULL[day.getDay()]})${hol ? ` — feriado: ${hol.nome}` : ''}`;
+      const msg = [
+        'Olá! Gostaria de consultar a disponibilidade de um horário.',
+        '',
+        `💈 Barbeiro: ${pro ? pro.name : 'Sem preferência'}`,
+        ...(service ? [`✂️ Serviço: ${service}`] : []),
+        `📅 Data: ${date}`,
+        `⏰ Horário: ${time}`,
+        '',
+        'Esse horário está disponível?',
+      ].join('\n');
+      const phone = pro ? pro.phone : cfg.whatsappGeral;
+      send.href = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
+    };
+
+    // marca só o botão escolhido, sem recriar a lista (o foco do teclado fica onde está)
+    const press = (box, btn) => $$('button', box).forEach(b => b.setAttribute('aria-pressed', String(b === btn)));
+
+    // "Outro horário": o cliente digita um horário quebrado (ex.: 10:40)
+    const range = cfg.horarioLivre || { de: cfg.horarios[0], ate: cfg.horarios[cfg.horarios.length - 1] };
+    let custom = false;
+    timeInput.min = range.de;
+    timeInput.max = range.ate;
+
+    const checkCustom = () => {
+      const v = timeInput.value;
+      let err = '';
+      if (v && (toMin(v) < toMin(range.de) || toMin(v) > toMin(range.ate))) err = `Escolha um horário entre ${range.de} e ${range.ate}.`;
+      else if (v && day && tooSoon(day, v)) err = 'Esse horário já está muito próximo. Escolha um mais tarde.';
+      time = v && !err ? v : null;
+      timeError.hidden = !err;
+      timeError.textContent = err;
+      timeInput.setAttribute('aria-invalid', String(!!err));
+    };
+
+    const setCustom = on => {
+      custom = on;
+      customBox.hidden = !on;
+      if (!on) { timeError.hidden = true; timeInput.removeAttribute('aria-invalid'); }
+    };
+
+    const renderTimes = () => {
+      const slots = (day ? slotsFor(day) : []).map(t =>
+        chip('picker__time', t, null, !custom && t === time, e => {
+          time = t; setCustom(false); press(timesBox, e.currentTarget); updateSend();
+        }));
+      const other = chip('picker__time picker__time--other', 'Outro horário', null, custom, e => {
+        press(timesBox, e.currentTarget);
+        setCustom(true);
+        checkCustom(); updateSend();
+        timeInput.focus();
+      });
+      timesBox.replaceChildren(...slots, other);
+    };
+
+    timeInput.addEventListener('input', () => { checkCustom(); updateSend(); });
+
+    // observação do dia escolhido (feriado)
+    const renderNote = () => {
+      const hol = day && holidays.get(iso(day));
+      holidayNote.hidden = !hol;
+      if (hol) holidayNote.textContent = `${pad(day.getDate())}/${pad(day.getMonth() + 1)} é ${TIPO[hol.tipo] ? TIPO[hol.tipo].toLowerCase() : 'feriado'}: ${hol.nome}. A atendente confirma pelo WhatsApp se haverá atendimento.`;
+    };
+
+    // calendário do mês (month: 0 a 11 do ano configurado)
+    let month = 0;
+    const renderCal = () => {
+      monthLabel.textContent = `${MONTH_FULL[month]} ${cfg.ano}`;
+      prevBtn.disabled = month === 0;
+      nextBtn.disabled = month === 11;
+      const first = new Date(cfg.ano, month, 1);
+      const total = new Date(cfg.ano, month + 1, 0).getDate();
+      const cells = [];
+      for (let i = 0; i < first.getDay(); i++) cells.push(document.createElement('span'));
+      for (let n = 1; n <= total; n++) {
+        const d = new Date(cfg.ano, month, n);
+        const hol = holidays.get(iso(d));
+        const free = canPick(d);
+        const label = d.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' }) +
+          (hol ? `, ${TIPO[hol.tipo] || 'Feriado'}: ${hol.nome}` : '') + (free ? '' : ', indisponível');
+        const b = chip(`cal__day${hol ? ` is-holiday is-${hol.tipo}` : ''}`, `${n}${hol ? '<i aria-hidden="true"></i>' : ''}`, label,
+          !!day && d.toDateString() === day.toDateString(),
+          e => {
+            day = d;
+            press(daysBox, e.currentTarget);
+            if (custom) checkCustom();
+            else if (time && !slotsFor(d).includes(time)) time = null;
+            renderTimes(); renderNote(); updateSend();
+          });
+        if (hol) b.title = `${TIPO[hol.tipo] || 'Feriado'}: ${hol.nome}`;
+        b.disabled = !free;
+        cells.push(b);
+      }
+      daysBox.replaceChildren(...cells);
+      // feriados do mês, em observação abaixo do calendário
+      const monthHolidays = (cfg.feriados || []).filter(f => +f.data.slice(5, 7) === month + 1);
+      monthNotes.replaceChildren(...monthHolidays.map(f => {
+        const li = document.createElement('li');
+        li.className = `is-${f.tipo}`;
+        li.innerHTML = '<b></b> <span></span>';
+        $('b', li).textContent = `${f.data.slice(8, 10)}/${f.data.slice(5, 7)}`;
+        $('span', li).textContent = `${f.nome} (${(TIPO[f.tipo] || 'Feriado').toLowerCase()})`;
+        return li;
+      }));
+      monthNotes.hidden = !monthHolidays.length;
+    };
+    prevBtn.addEventListener('click', () => { if (month > 0) { month--; renderCal(); } });
+    nextBtn.addEventListener('click', () => { if (month < 11) { month++; renderCal(); } });
+
+    const showStep = when => {
+      stepWho.hidden = when;
+      stepWhen.hidden = !when;
+      picker.scrollTop = 0;
+    };
+
+    const pickPro = p => {
+      pro = p;
+      whoLabel.textContent = p ? p.name : 'qualquer profissional';
+      day = firstFree();
+      time = null;
+      timeInput.value = '';
+      setCustom(false);
+      const now = new Date();
+      month = day ? day.getMonth() : (now.getFullYear() === cfg.ano ? now.getMonth() : 0);
+      renderCal(); renderTimes(); renderNote(); updateSend();
+      showStep(true);
+      $('[aria-pressed="true"]', daysBox)?.focus();
+    };
+
     // service = null → agendamento geral (botões "Agendar horário")
-    const open = (service, trigger) => {
+    const open = (svc, trigger) => {
       lastTrigger = trigger;
-      title.textContent = service || 'Agendar horário';
-      const what = service ? `agendar: ${service}` : 'agendar um horário';
+      service = svc;
+      title.textContent = svc || 'Agendar horário';
       list.replaceChildren(
         ...team.map(p => option(
-          WA + encodeURIComponent(service
-            ? `Olá! Gostaria de ${what}, com ${p.art} ${p.name}.`
-            : `Olá! Gostaria de ${what} com ${p.art} ${p.name}.`),
           `<img class="picker__avatar" src="${p.img}" alt="" width="52" height="52" />`,
-          p.name, p.role)),
+          p.name, p.role, () => pickPro(p))),
         option(
-          WA + encodeURIComponent(`Olá! Gostaria de ${what}. Pode ser com qualquer profissional disponível.`),
           '<span class="picker__avatar picker__avatar--any"><svg class="icon" aria-hidden="true"><use href="#i-whats" /></svg></span>',
-          'Sem preferência', 'Primeiro profissional disponível'),
+          'Sem preferência', 'Primeiro profissional disponível', () => pickPro(null)),
       );
+      showStep(false);
       picker.showModal();
       document.body.style.overflow = 'hidden';
     };
+
+    $('[data-picker-back]', picker).addEventListener('click', () => {
+      showStep(false);
+      $('.picker__opt', list)?.focus();
+    });
+    send.addEventListener('click', e => {
+      if (send.getAttribute('aria-disabled') === 'true') { e.preventDefault(); return; }
+      picker.close();
+    });
 
     // sem JS, todos esses links continuam indo direto ao WhatsApp
     $$('[data-book]').forEach(el => el.addEventListener('click', e => {
@@ -182,6 +384,24 @@
       e.preventDefault();
       open(null, el);
     }));
+    // botões da seção Equipe: profissional já escolhido, vai direto para dia e horário
+    $$('[data-book-pro]').forEach(el => el.addEventListener('click', e => {
+      const p = team.find(t => t.name === el.dataset.bookPro);
+      if (!p) return; // nome não bate com a equipe: segue o link do WhatsApp
+      e.preventDefault();
+      open(null, el);
+      pickPro(p);
+    }));
+    // clicar em qualquer parte do card do barbeiro (foto, nome...) faz o mesmo que o botão
+    $$('.barber').forEach(card => {
+      const btn = $('[data-book-pro]', card);
+      if (!btn) return;
+      card.classList.add('is-bookable');
+      card.addEventListener('click', e => {
+        if (e.target.closest('a, button')) return;
+        btn.click();
+      });
+    });
     $('[data-picker-close]', picker).addEventListener('click', () => picker.close());
     picker.addEventListener('click', e => {
       if (e.target !== picker) return;

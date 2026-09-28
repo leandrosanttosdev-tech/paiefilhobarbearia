@@ -300,7 +300,7 @@
                 <h3 class="barber__name">Leon</h3>
                 <div class="barber__more"><div>
                   <blockquote class="barber__bio"><p>“Fomos atendidos pelo Leon Santiago (filho)… todos super educados e agradáveis.”</p><cite>Geraldo M., no Google</cite></blockquote>
-                  <a class="btn btn--primary btn--sm" href="https://wa.me/5579999100181?text=Ol%C3%A1!%20Gostaria%20de%20agendar%20um%20hor%C3%A1rio%20com%20o%20Leon." target="_blank" rel="noopener">
+                  <a class="btn btn--primary btn--sm" href="https://wa.me/5579999100181?text=Ol%C3%A1!%20Gostaria%20de%20agendar%20um%20hor%C3%A1rio%20com%20o%20Leon." target="_blank" rel="noopener" data-book-pro="Leon">
                     <svg class="icon" aria-hidden="true"><use href="#i-whats" /></svg><span>Agendar com Leon</span>
                   </a>
                   </div>
@@ -317,7 +317,7 @@
                 <h3 class="barber__name">Camila</h3>
                 <div class="barber__more"><div>
                   <blockquote class="barber__bio"><p>“Foi super atenciosa, profissional e caprichou bastante no corte.”</p><cite>Enisson S., no Google</cite></blockquote>
-                  <a class="btn btn--primary btn--sm" href="https://wa.me/5579999100181?text=Ol%C3%A1!%20Gostaria%20de%20agendar%20um%20hor%C3%A1rio%20com%20a%20Camila." target="_blank" rel="noopener">
+                  <a class="btn btn--primary btn--sm" href="https://wa.me/5579999100181?text=Ol%C3%A1!%20Gostaria%20de%20agendar%20um%20hor%C3%A1rio%20com%20a%20Camila." target="_blank" rel="noopener" data-book-pro="Camila">
                     <svg class="icon" aria-hidden="true"><use href="#i-whats" /></svg><span>Agendar com Camila</span>
                   </a>
                   </div>
@@ -334,7 +334,7 @@
                 <h3 class="barber__name">Heduardo</h3>
                 <div class="barber__more"><div>
                   <blockquote class="barber__bio"><p>“Me prestou um atendimento excepcional.”</p><cite>Marcos V., no Google</cite></blockquote>
-                  <a class="btn btn--primary btn--sm" href="https://wa.me/5579999100181?text=Ol%C3%A1!%20Gostaria%20de%20agendar%20um%20hor%C3%A1rio%20com%20o%20Heduardo." target="_blank" rel="noopener">
+                  <a class="btn btn--primary btn--sm" href="https://wa.me/5579999100181?text=Ol%C3%A1!%20Gostaria%20de%20agendar%20um%20hor%C3%A1rio%20com%20o%20Heduardo." target="_blank" rel="noopener" data-book-pro="Heduardo">
                     <svg class="icon" aria-hidden="true"><use href="#i-whats" /></svg><span>Agendar com Heduardo</span>
                   </a>
                   </div>
@@ -586,10 +586,38 @@
   <!-- Escolha do profissional ao agendar um serviço (preenchida por js/main.js a partir da seção Equipe) -->
   <dialog class="picker" data-picker aria-labelledby="picker-title">
     <button class="picker__close" type="button" data-picker-close aria-label="Fechar"><svg aria-hidden="true"><use href="#i-close" /></svg></button>
-    <p class="eyebrow">Agendar pelo WhatsApp</p>
+    <p class="eyebrow">Consultar horário</p>
     <h2 id="picker-title" class="picker__title" data-picker-service></h2>
-    <p class="picker__lead">Com quem você prefere ser atendido?</p>
-    <ul class="picker__list" data-picker-list></ul>
+    <div data-picker-step="who">
+      <p class="picker__lead">Com quem você prefere ser atendido?</p>
+      <ul class="picker__list" data-picker-list></ul>
+    </div>
+    <div data-picker-step="when" hidden>
+      <button class="picker__back" type="button" data-picker-back><svg class="icon" aria-hidden="true"><use href="#i-prev" /></svg><span>Com <b data-picker-who></b> · trocar</span></button>
+      <p class="picker__label" id="picker-days-label">Escolha o dia</p>
+      <div class="cal">
+        <div class="cal__head">
+          <button class="cal__nav" type="button" data-cal-prev aria-label="Mês anterior"><svg class="icon" aria-hidden="true"><use href="#i-prev" /></svg></button>
+          <b class="cal__month" data-cal-month aria-live="polite"></b>
+          <button class="cal__nav" type="button" data-cal-next aria-label="Próximo mês"><svg class="icon" aria-hidden="true"><use href="#i-next" /></svg></button>
+        </div>
+        <div class="cal__week" aria-hidden="true"><span>Dom</span><span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span></div>
+        <div class="cal__grid" data-picker-days role="group" aria-labelledby="picker-days-label"></div>
+        <ul class="cal__notes" data-cal-notes hidden></ul>
+      </div>
+      <p class="picker__holiday" data-picker-holiday role="status" hidden></p>
+      <p class="picker__label" id="picker-times-label">Escolha o horário</p>
+      <div class="picker__times" data-picker-times role="group" aria-labelledby="picker-times-label"></div>
+      <div class="picker__custom" data-picker-custom hidden>
+        <label for="picker-time-input">Digite o horário que você prefere</label>
+        <input class="picker__input" id="picker-time-input" type="time" step="300" data-picker-time-input />
+        <p class="picker__error" data-picker-time-error role="alert" hidden></p>
+      </div>
+      <a class="btn btn--primary btn--block picker__send" data-picker-send href="#" target="_blank" rel="noopener" aria-disabled="true">
+        <svg class="icon" aria-hidden="true"><use href="#i-whats" /></svg><span>Consultar disponibilidade</span>
+      </a>
+      <p class="picker__note">Seu horário será confirmado pela nossa equipe pelo WhatsApp.</p>
+    </div>
   </dialog>
 
   <!-- Barra fixa de agendamento (celular) -->
@@ -602,6 +630,7 @@
     </a>
   </div>
 
+  <script src="js/agendamento.js" defer></script>
   <script src="js/main.js" defer></script>
 </body>
 </html>
